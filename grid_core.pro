@@ -370,3 +370,94 @@ print,"corefind_surfd exited sucessfully"
 return,core_para
 
 END
+
+;***************************************************************************
+
+
+;;-----------------------------------------------------------------------------
+;;  functions
+;;-----------------------------------------------------------------------------
+pro destroy_bad,nmin,nbad  ; rejects those cores with number of pixels <= nmin
+
+COMMON SHARE100,surfd,data,assign,assign_b,ncore
+COMMON SHARE200,G,mp,dx,cs2,msun
+
+
+ncore_new=0
+nbad=0
+
+for n1=1,ncore do begin
+    iclp=where(assign eq n1,count)
+
+    assign(iclp) -= nbad
+    if (count le nmin) then begin
+       nbad += 1
+       assign(iclp)=0
+    endif
+endfor
+
+ncore = ncore - nbad
+end
+
+;;-----------------------------------------------------------------------------
+pro boundcore2d,nmin,surfd_rb,core_para,x,y  ; identifies bound region
+
+COMMON SHARE100,surfd,data,assign,assign_b,ncore
+COMMON SHARE200,G,mp,dx,cs2,msun
+
+cell_area= dx * dx
+nx=n_elements(x)
+ny=n_elements(y)
+for n1=1,ncore do begin
+
+  print,n1,ncore,format='("Calculating core parameters of No.",5x,i6.6," out of",5x,i6.6," cores")'
+  iclp=where(assign eq n1,count)
+  ppeak = max(data(iclp),peak)
+
+  jpeak=iclp(peak)/nx
+  ipeak=iclp(peak)-jpeak*nx
+
+;coordinates of core centers [pixel #]
+  core_para(n1-1,0)=ipeak
+  core_para(n1-1,1)=jpeak
+
+;the local gravitational potential minimum [(km/s)^2]
+  core_para(n1-1,7)=ppeak                
+
+; mass of core without background subtraction [Msun]
+  core_para(n1-1,2)= total(surfd(iclp))*cell_area/msun
+
+; mass of core with background subtraction  [Msun]
+  core_para(n1-1,3)= total(surfd_rb(iclp))*cell_area/msun
+
+; calculate the total energy inside cores (E_p + E_k)
+  surfd_iclp=surfd(iclp)
+  phi_iclp=data(iclp)
+  phi_edge=min(phi_iclp)
+  phi_bott=max(phi_iclp)
+
+  E_w=phi_iclp-phi_edge
+
+  iclp_bound0=where(E_w ge 1.5*cs2, ct0)
+
+  if (ct0 ge nmin) then begin
+; bound core index 
+  assign_b(iclp(iclp_bound0))=n1
+; mass of bound region [Msun]
+     core_para(n1-1,4)=total(surfd_rb(iclp(iclp_bound0)))*cell_area/msun
+; pixel number of the bound region
+     core_para(n1-1,6)=ct0
+  endif else begin
+; core not bound
+     core_para(n1-1,4)=0.0
+     core_para(n1-1,6)=0
+  endelse
+
+; the depth of the potential well in which the core resides [(km/s)^2]
+  core_para(n1-1,8)=(phi_bott-phi_edge)   
+; pixel number of the whole core area
+  core_para(n1-1,5)=count
+endfor
+END
+;-----------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
