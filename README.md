@@ -9,3 +9,5 @@ clumps/cores in observed column density maps. The required input is a two-dimens
 column density of atomic hydrogen. The code will generate two fits files containing information of identified cores, as 
 well as a map illustrating the gravitational potential contours and the identified cores. A sample FITS map is provided 
 here for code-testing purpose.
+
+NOTE: This code uses publically-available IDL routines imdisp.pro and extremes_2d.pro, both included here for convenience.
